@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Source Code Viewer | Nitish Kushwaha</title>
+<link rel="stylesheet" href="style.css">
+<style>
+body{background:#07101f}.code-wrap{max-width:1400px;margin:0 auto;padding:100px 22px 40px}.viewer-head{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}.viewer-head h1{margin:0}.viewer-tools{display:flex;gap:10px;flex-wrap:wrap}.viewer-tools input,.viewer-tools select{background:#101c31;border:1px solid #263854;color:#fff;border-radius:12px;padding:11px 13px}.codebox{display:grid;grid-template-columns:280px 1fr;background:#081323;border:1px solid #243651;border-radius:18px;overflow:hidden;min-height:620px;box-shadow:0 20px 60px #0006}.files{border-right:1px solid #243651;overflow:auto}.file{padding:11px 14px;color:#b8c6da;cursor:pointer;border-bottom:1px solid #17253a;font-size:13px}.file:hover,.file.active{background:#12223a;color:#fff}.code{overflow:auto;background:#050b14}.code pre{margin:0;padding:20px 0;font:13px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:#dce7f5;min-width:max-content}.line{display:block}.ln{display:inline-block;width:52px;text-align:right;padding-right:18px;color:#51627c;user-select:none}.txt{white-space:pre}.copy{cursor:pointer}.empty{padding:30px;color:#8fa2bd}.back{color:#9cc5ff;text-decoration:none}.project-info{color:#91a4bd;font-size:14px;margin:7px 0 0}.mobile-files{display:none}
+@media(max-width:800px){.codebox{grid-template-columns:1fr}.files{border-right:0;border-bottom:1px solid #243651;max-height:190px}.code-wrap{padding-top:90px}.viewer-head{align-items:flex-start}.mobile-files{display:block}}
+</style>
+</head><body>
+<header class="site-header"><div class="nav-inner"><a class="brand" href="index.html">Nitish<span>.</span></a><nav><a href="index.html#home">Home</a><a href="index.html#projects">Projects</a><a href="index.html#contact">Contact</a></nav></div></header>
+<main class="code-wrap">
+<a class="back" href="index.html#projects">← Back to Projects</a>
+<div class="viewer-head"><div><h1 id="title">Source Code</h1><p id="info" class="project-info"></p></div><div class="viewer-tools"><select id="fileSelect"></select><input id="search" placeholder="Search code…"><button class="btn copy" id="copy">Copy Code</button></div></div>
+<div class="codebox"><aside class="files" id="files"></aside><section class="code"><pre id="code"><span class="empty">Loading source code…</span></pre></section></div>
+</main>
+<script>
+const qs=new URLSearchParams(location.search), slug=qs.get("project");
+let data, current;
+const esc=s=>s.replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+async function init(){
+ const all=await fetch("projects.json").then(r=>r.json()); data=all[slug];
+ if(!data){document.getElementById("code").innerHTML='<span class="empty">Project not found.</span>';return}
+ title.textContent=data.title+" — Source Code"; info.textContent=data.category+" • "+data.tech+" • "+data.files.length+" source files";
+ files.innerHTML=data.files.map((f,i)=>`<div class="file ${i===0?'active':''}" data-i="${i}">${esc(f.path)}</div>`).join("");
+ fileSelect.innerHTML=data.files.map((f,i)=>`<option value="${i}">${esc(f.path)}</option>`).join("");
+ document.querySelectorAll(".file").forEach(x=>x.onclick=()=>show(+x.dataset.i));
+ fileSelect.onchange=()=>show(+fileSelect.value); search.oninput=()=>render(current.content,search.value);
+ show(0);
+}
+function show(i){current=data.files[i];fileSelect.value=i;document.querySelectorAll(".file").forEach(x=>x.classList.toggle("active",+x.dataset.i===i));render(current.content,"")}
+function render(text,q){if(q) {let re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"),"gi");let out="",last=0,m;while((m=re.exec(text))){out+=esc(text.slice(last,m.index));out+="<mark>"+esc(m[0])+"</mark>";last=m.index+m[0].length}out+=esc(text.slice(last));text=out}else text=esc(text);code.innerHTML=text.split("\n").map((l,i)=>`<span class="line"><span class="ln">${i+1}</span><span class="txt">${l||" "}</span></span>`).join("")}
+copy.onclick=async()=>{await navigator.clipboard.writeText(current?.content||"");copy.textContent="Copied ✓";setTimeout(()=>copy.textContent="Copy Code",1200)}
+init();
+</script></body></html>
